@@ -1,0 +1,71 @@
+repos:
+  # Detect secrets before commit
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            backend/\.env\.example|
+            frontend/\.env\.local\.example
+          )$
+
+  # Python code formatting (Black)
+  - repo: https://github.com/psf/black
+    rev: 23.12.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: ^backend/
+
+  # Python linting (Flake8)
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.1.0
+    hooks:
+      - id: flake8
+        files: ^backend/
+        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
+
+  # JavaScript/TypeScript formatting (Prettier)
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: ^frontend/
+        types_or: [javascript, typescript, jsx, tsx, json]
+
+  # ESLint for JavaScript/TypeScript
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.55.0
+    hooks:
+      - id: eslint
+        files: ^frontend/
+        types: [javascript, typescript, jsx, tsx]
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        files: ^(\.github/workflows/|infra/).*\.ya?ml$
+        args: ['--config-data', '{rules: {line-length: {max: 120}}}']
+
+  # Git hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ['--unsafe']
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: debug-statements
+
+ci:
+  autofix_commit_msg: 'style: automatic fixes from pre-commit.com hooks'
+  autofix_prs: true
+  skip: [eslint]  # ESLint is slow in CI, run separately in GitHub Actions

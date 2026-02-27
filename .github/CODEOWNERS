@@ -1,0 +1,26 @@
+# Code owners for SentinelLens
+# All PRs require review from appropriate team members
+
+# Security-critical files require @security-team review
+backend/src/config.py @security-team
+backend/src/security.py @security-team
+backend/src/api/auth.py @security-team
+infra/modules/key-vault.bicep @security-team
+infra/modules/identities.bicep @security-team
+
+# Infrastructure changes require @devops-team or @infra-team review
+infra/ @devops-team
+.github/workflows/ @devops-team
+Dockerfile @devops-team
+
+# Backend changes require @backend-team review
+backend/ @backend-team
+
+# Frontend changes require @frontend-team review
+frontend/ @frontend-team
+
+# Documentation changes require author review
+docs/ @security-team
+
+# Default reviewers
+* @maintainers
