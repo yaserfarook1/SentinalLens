@@ -21,6 +21,8 @@ from src.services.kql_parser import kql_parser
 from src.services.cost_calculator import cost_calculator
 from src.services.report_generator import report_generator
 from src.security import pii_masking, prompt_shield, data_sanitizer
+from src.security_middleware import security_middleware
+from src.utils.logging import AuditLogger
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +113,15 @@ class AgentOrchestrator:
 
             logger.info(f"[AGENT] Found {len(rules)} analytics rules")
 
+            # ===== SECURITY: Validate and mask KQL queries =====
+            logger.info("[AGENT] Applying security controls: validating and masking KQL")
+            rules = security_middleware.validate_and_mask_kql_queries(rules)
+            security_middleware.log_security_event(
+                event_type="KQL_VALIDATION_COMPLETE",
+                severity="LOW",
+                details=f"Validated {len(rules)} KQL queries"
+            )
+
             # ===== STEP 4: Parse KQL from rules =====
             logger.info("[AGENT] STEP 4: Parsing KQL queries")
             kql_queries = [rule.kql_query for rule in rules if rule.kql_query]
@@ -154,6 +165,15 @@ class AgentOrchestrator:
             )
 
             logger.info(f"[AGENT] Found {len(connectors)} data connectors")
+
+            # ===== SECURITY: Mask connector metadata =====
+            logger.info("[AGENT] Applying security controls: masking connector metadata")
+            connectors = security_middleware.mask_connector_metadata(connectors)
+            security_middleware.log_security_event(
+                event_type="CONNECTOR_METADATA_MASKED",
+                severity="LOW",
+                details=f"Masked metadata for {len(connectors)} connectors"
+            )
 
             # ===== STEP 8: Calculate savings =====
             logger.info("[AGENT] STEP 8: Calculating cost savings")
@@ -200,6 +220,14 @@ class AgentOrchestrator:
                 f"tables={len(tables)} "
                 f"annual_savings=${report.summary.total_annual_savings:,.0f} "
                 f"execution_time={execution_time:.1f}s"
+            )
+
+            # ===== SECURITY: Audit logging for completed audit =====
+            logger.info("[AGENT] Logging audit completion event")
+            security_middleware.log_security_event(
+                event_type="AUDIT_COMPLETED",
+                severity="LOW",
+                details=f"Audit completed: {len(tables)} tables, ${report.summary.total_annual_savings:,.0f} savings identified"
             )
 
             return report

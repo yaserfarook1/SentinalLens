@@ -26,6 +26,8 @@ from src.models.schemas import (
 from src.api.auth import validate_entra_token, require_approval_group, extract_user_info
 from src.services.azure_api import azure_api_service
 from src.security import pii_masking, prompt_shield
+from src.security_middleware import security_middleware
+from src.utils.logging import AuditLogger
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +108,13 @@ async def start_audit(
             logger.warning(
                 f"[AUDIT] Prompt injection detected in audit request: {reason}"
             )
+            # Log security event
+            security_middleware.log_security_event(
+                event_type="PROMPT_INJECTION_ATTEMPT",
+                severity="HIGH",
+                details=f"Injection detected in workspace_id: {reason}",
+                user_id=user_info['user_id']
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid input detected"
@@ -114,6 +123,15 @@ async def start_audit(
         logger.info(
             f"[AUDIT] Audit job started by: {user_info['user_principal']} "
             f"for workspace: {request.workspace_id}"
+        )
+
+        # Log audit event
+        AuditLogger.log_event(
+            event_type="AUDIT_STARTED",
+            resource=request.workspace_id,
+            status="SUCCESS",
+            user_id=user_info['user_id'],
+            details=f"days_lookback={request.days_lookback}"
         )
 
         # Create job (in production, would create database record)
