@@ -143,7 +143,7 @@ class KqlParser:
             Tuple of (tables set, confidence level)
         """
         tables = set()
-        max_confidence = ConfidenceLevel.LOW
+        max_confidence_score = 0.0  # Track numeric confidence
 
         # Clean up query (remove comments, normalize whitespace)
         cleaned_query = self._clean_kql(kql_query)
@@ -166,19 +166,22 @@ class KqlParser:
                             if self._is_valid_table_name(table_name):
                                 tables.add(table_name)
 
-                    if base_confidence > max_confidence:
-                        max_confidence = ConfidenceLevel.HIGH if base_confidence > 0.8 else ConfidenceLevel.MEDIUM
+                    # Track max numeric confidence score
+                    if base_confidence > max_confidence_score:
+                        max_confidence_score = base_confidence
 
             except Exception as e:
                 logger.debug(f"[KQL] Regex pattern failed: {str(e)}")
 
-        # Adjust confidence based on findings
+        # Convert numeric score to confidence level
         if not tables:
             return set(), ConfidenceLevel.LOW
-        elif len(tables) == 1:
+        elif max_confidence_score > 0.85:
+            return tables, ConfidenceLevel.HIGH
+        elif max_confidence_score > 0.7:
             return tables, ConfidenceLevel.MEDIUM
         else:
-            return tables, max_confidence if max_confidence else ConfidenceLevel.MEDIUM
+            return tables, ConfidenceLevel.LOW
 
     def _clean_kql(self, kql_query: str) -> str:
         """Clean KQL query for parsing"""
@@ -210,7 +213,7 @@ class KqlParser:
             'distinct', 'top', 'range', 'as', 'by', 'on', 'with', 'between',
             'in', 'and', 'or', 'not', 'has', 'contains', 'startswith', 'endswith',
             'matches', 'regex', 'timespan', 'ago', 'now', 'datetime',
-            'strcat', 'tolower', 'toupper', 'split', 'parse'
+            'strcat', 'tolower', 'toupper', 'split', 'parse', 'select'
         }
 
         return name.lower() not in kql_keywords

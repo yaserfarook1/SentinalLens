@@ -40,14 +40,14 @@ class TestCostCalculator:
             target_tier="Archive"
         )
 
-        # Approximate pricing:
-        # Hot: ~$0.10/GB/day = $3000/month for 100 GB/day
-        # Archive: ~$0.002/GB/day = $60/month for 100 GB/day
-        # Savings: ~$2940/month
+        # Approximate pricing (using public Azure rates):
+        # Hot: ~$0.10/GB/day = $300/month for 100 GB/day
+        # Archive: ~$0.002/GB/day = $6/month for 100 GB/day
+        # Savings: ~$294/month
 
-        assert costs["monthly_savings"] > 2000  # More than $2000/month
-        assert costs["monthly_savings"] < 4000  # Less than $4000/month
-        assert costs["annual_savings"] > 20000  # More than $20k/year
+        assert costs["monthly_savings"] > 200  # More than $200/month
+        assert costs["monthly_savings"] < 500  # Less than $500/month
+        assert costs["annual_savings"] > 2000  # More than $2k/year
 
     def test_calculate_costs_zero_ingestion(self):
         """Test edge case: table with zero ingestion"""

@@ -105,4 +105,4 @@ class TestKqlParser:
 
         assert result.success
         assert "SecurityEvent" in result.tables
-        assert result.parsing_confidence > 0.5
+        assert result.confidence in [ConfidenceLevel.HIGH, ConfidenceLevel.MEDIUM]

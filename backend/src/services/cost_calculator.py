@@ -58,7 +58,7 @@ class CostCalculator:
             # Monthly costs (30 days)
             monthly_cost_hot = daily_cost_hot * 30
             monthly_cost_archive = daily_cost_archive * 30
-            monthly_savings = monthly_savings * 30
+            monthly_savings = daily_savings * 30
 
             # Annual costs
             annual_savings = monthly_savings * 12
