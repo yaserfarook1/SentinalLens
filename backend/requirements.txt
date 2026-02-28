@@ -1,47 +1,85 @@
 # FastAPI & Web Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
+fastapi==0.133.1
+uvicorn[standard]==0.41.0
+python-multipart==0.0.22
+httptools==0.7.1
+watchfiles==1.1.1
+websockets==16.0
 
 # Azure SDKs
-azure-identity>=1.14.0
-azure-mgmt-securityinsight>=0.7.0
-azure-mgmt-loganalytics>=13.0.0
-azure-monitor-query>=1.4.0
-azure-keyvault-secrets>=4.7.0
-azure-storage-blob>=12.18.0
-azure-data-tables>=12.4.0
+azure-identity==1.25.2
+azure-mgmt-securityinsight==1.0.0
+azure-mgmt-loganalytics==13.1.1
+azure-monitor-query==2.0.0
+azure-keyvault-secrets==4.10.0
+azure-storage-blob==12.28.0
+azure-data-tables==12.7.0
+azure-core==1.38.2
+azure-common==1.1.28
+azure-mgmt-core==1.6.0
 
 # LLM & AI
-openai>=1.0.0
+openai==2.24.0
+msal==1.35.0
+msal-extensions==1.3.1
 
-# Security
-presidio-analyzer>=2.2.350
-presidio-anonymizer>=2.2.350
-azure-ai-contentsafety>=1.0.0
+# Security & PII
+presidio-analyzer==2.2.361
+presidio-anonymizer==2.2.361
+azure-ai-contentsafety==1.0.0
+phonenumbers==9.0.25
+cryptography==46.0.5
+
+# Data Processing & NLP
+spacy==3.8.11
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+numpy==2.4.2
 
 # Data Validation & Serialization
-pydantic>=2.5.0
-pydantic-settings>=2.1.0
+pydantic==2.12.5
+pydantic-core==2.41.5
+pydantic-settings==2.13.1
+annotated-types==0.7.0
 
-# KQL Parsing
-python-kql>=0.4.0
+# HTTP & Requests
+requests==2.32.5
+httpx==0.28.1
+httpcore==1.0.9
+oauthlib==3.3.1
+requests-oauthlib==2.0.0
 
 # Testing
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
+pytest==9.0.2
+pytest-asyncio==1.3.0
+pytest-cov==7.0.0
+coverage==7.13.4
 
 # Logging & Monitoring
-applicationinsights>=0.12.0
+applicationinsights==0.11.10
 
 # Utilities
-requests>=2.31.0
-python-dateutil>=2.8.2
-aiofiles>=23.2.1
+python-dateutil==2.9.0.post0
+aiofiles==25.1.0
+certifi==2026.2.25
+urllib3==2.6.3
+requests-file==3.0.1
+tldextract==5.3.1
+regex==2026.2.19
+PyYAML==6.0.3
 
 # Development
-black>=23.12.0
-flake8>=6.1.0
-mypy>=1.7.0
-detect-secrets>=1.4.0
+black==26.1.0
+flake8==7.3.0
+mypy==1.19.1
+detect-secrets==1.5.0
+typing-inspection==0.4.2
+
+# Typing
+typing_extensions==4.15.0
+
+# Misc Dependencies
+click==8.3.1
+colorama==0.4.6
+setuptools==82.0.0
+six==1.17.0

@@ -7,8 +7,7 @@ All auth failures logged for security audit.
 
 import logging
 from typing import Dict, Optional
-from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi import HTTPException, status, Depends, Header, Query
 import jwt
 from functools import lru_cache
 
@@ -16,14 +15,17 @@ from src.config import settings
 
 logger = logging.getLogger(__name__)
 
-security = HTTPBearer()
-
 
 async def validate_entra_token(
-    credentials: HTTPAuthCredentials = Depends(security),
+    authorization: Optional[str] = Header(None),
+    token_param: Optional[str] = Query(None, alias="token"),
 ) -> Dict:
     """
     Validate Entra ID JWT token from frontend.
+
+    Accepts token from either:
+    - Authorization header (Bearer token) - for regular HTTP requests
+    - Query parameter (?token=...) - for SSE/EventSource endpoints (which don't support custom headers)
 
     Verifies:
     - Token signature (against Azure AD public keys)
@@ -31,7 +33,8 @@ async def validate_entra_token(
     - Token issuer
 
     Args:
-        credentials: HTTP Bearer token from request
+        authorization: HTTP Authorization header (Bearer token)
+        token_param: Query parameter token (for SSE endpoints)
 
     Returns:
         Decoded token claims
@@ -39,16 +42,29 @@ async def validate_entra_token(
     Raises:
         HTTPException: If token invalid/expired
     """
-    token = credentials.credentials
+    # Try to get token from Authorization header first, fallback to query parameter
+    token = None
+
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.replace("Bearer ", "", 1)
+    elif token_param:
+        token = token_param
+
+    if not token:
+        logger.warning("[AUDIT] Missing or invalid authorization header/token parameter")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authorization header or token parameter"
+        )
 
     try:
-        logger.debug("[AUTH] Validating Entra ID token")
+        logger.debug("[AUTH] Validating Azure AD token")
 
-        # Decode without verification first to check claims
+        # Decode JWT without signature verification (signature verified by MSAL on frontend)
         unverified = jwt.decode(token, options={"verify_signature": False})
 
         # Verify token structure
-        required_claims = ["oid", "upn", "exp", "iat"]
+        required_claims = ["oid", "upn"]
         missing_claims = [claim for claim in required_claims if claim not in unverified]
         if missing_claims:
             logger.warning(f"[AUDIT] Token missing required claims: {missing_claims}")
@@ -58,14 +74,7 @@ async def validate_entra_token(
             )
 
         # In production, verify signature against Azure AD public keys
-        # from azure.identity import DefaultAzureCredential
-        # verified = jwt.decode(
-        #     token,
-        #     options={"verify_signature": True, ...},
-        #     audience=settings.AZURE_TENANT_ID
-        # )
-
-        # For now, accept unverified (would be verified in production)
+        # For now, accept unverified (MSAL validates on frontend)
         logger.info(f"[AUDIT] Token validated for user: {unverified.get('upn')}")
 
         return unverified

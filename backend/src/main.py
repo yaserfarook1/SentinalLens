@@ -8,7 +8,6 @@ import logging
 from datetime import datetime
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZIPMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
@@ -44,9 +43,6 @@ app.add_middleware(
     expose_headers=["X-Total-Count"],
     max_age=3600
 )
-
-# GZIP compression
-app.add_middleware(GZIPMiddleware, minimum_size=1000)
 
 
 # ===== MIDDLEWARE HOOKS =====

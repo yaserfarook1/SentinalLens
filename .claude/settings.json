@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill -9 -f \"python\\\\|uvicorn\")"
+    ]
+  }
+}

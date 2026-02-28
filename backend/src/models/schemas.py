@@ -67,6 +67,20 @@ class ApprovalRequest(BaseModel):
         }
 
 
+class SetupCredentialsRequest(BaseModel):
+    """Setup app registration credentials"""
+    client_id: str = Field(..., min_length=1, description="Azure AD app registration client ID")
+    client_secret: str = Field(..., min_length=1, description="Azure AD app registration client secret")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "client_id": "12345678-1234-1234-1234-123456789012",
+                "client_secret": "your_client_secret_here"
+            }
+        }
+
+
 # ===== RESPONSE SCHEMAS =====
 class WorkspaceInfo(BaseModel):
     """Sentinel workspace info"""

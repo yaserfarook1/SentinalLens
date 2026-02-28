@@ -7,10 +7,10 @@ All API calls are logged (metadata only, never data contents).
 """
 
 from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
-from azure.mgmt.securityinsight import SecurityInsight
+from azure.mgmt.securityinsight import SecurityInsights
 from azure.mgmt.loganalytics import LogAnalyticsManagementClient
-from azure.monitor.query import LogsQueryClient, MetricsQueryClient
-from azure.core.exceptions import Azure ClientError, ResourceNotFoundError
+from azure.monitor.query import LogsQueryClient
+from azure.core.exceptions import AzureError
 import logging
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
@@ -33,7 +33,7 @@ class AzureApiService:
         self.credential = settings.credential
 
         # Initialize clients
-        self.sentinel_client = SecurityInsight(
+        self.sentinel_client = SecurityInsights(
             credential=self.credential,
             subscription_id=settings.AZURE_SUBSCRIPTION_ID
         )
@@ -42,9 +42,57 @@ class AzureApiService:
             subscription_id=settings.AZURE_SUBSCRIPTION_ID
         )
         self.logs_query_client = LogsQueryClient(credential=self.credential)
-        self.metrics_query_client = MetricsQueryClient(credential=self.credential)
 
         logger.info("[AUDIT] Azure API service initialized")
+
+    async def list_workspaces(self) -> List[Dict[str, str]]:
+        """
+        List all Log Analytics workspaces in the subscription.
+
+        Returns:
+            List of workspaces with name and ID
+        """
+        try:
+            logger.info(f"[AUDIT] Listing workspaces in subscription: {settings.AZURE_SUBSCRIPTION_ID}")
+            logger.debug(f"[AUDIT] Using credential type: {type(self.credential).__name__}")
+
+            workspaces = []
+
+            # Use Resource Management Client to list workspaces
+            from azure.mgmt.resource import ResourceManagementClient
+            resource_client = ResourceManagementClient(
+                credential=self.credential,
+                subscription_id=settings.AZURE_SUBSCRIPTION_ID
+            )
+
+            logger.debug("[AUDIT] ResourceManagementClient created, listing workspaces...")
+
+            # List all Log Analytics workspaces by resource type
+            workspaces_list = resource_client.resources.list(
+                filter="resourceType eq 'Microsoft.OperationalInsights/workspaces'"
+            )
+
+            # Convert generator to list to trigger the actual API call
+            workspaces_list = list(workspaces_list)
+            logger.debug(f"[AUDIT] Resource list API returned {len(workspaces_list)} items")
+
+            for resource in workspaces_list:
+                resource_group = resource.id.split("/")[4] if "/" in resource.id else "unknown"
+                workspace_data = {
+                    "workspace_id": resource.id,
+                    "workspace_name": resource.name,
+                    "subscription_id": settings.AZURE_SUBSCRIPTION_ID,
+                    "resource_group": resource_group
+                }
+                logger.debug(f"[AUDIT] Found workspace: {resource.name} in {resource_group}")
+                workspaces.append(workspace_data)
+
+            logger.info(f"[AUDIT] Successfully listed {len(workspaces)} workspaces")
+            return workspaces
+
+        except Exception as e:
+            logger.error(f"[AUDIT] Failed to list workspaces: {type(e).__name__}: {str(e)}", exc_info=True)
+            raise
 
     async def list_workspace_tables(
         self, resource_group: str, workspace_name: str

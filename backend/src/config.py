@@ -8,7 +8,11 @@ All credential access is logged for audit purposes.
 
 from pydantic_settings import BaseSettings
 from azure.keyvault.secrets import SecretClient
-from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
+from azure.identity import (
+    ManagedIdentityCredential,
+    DefaultAzureCredential,
+    ClientSecretCredential
+)
 from typing import Optional
 import logging
 
@@ -39,6 +43,12 @@ class Settings(BaseSettings):
     AZURE_KEY_VAULT_URL: str  # e.g., https://vault-name.vault.azure.net/
     AZURE_SENTINEL_WORKSPACE_ID: Optional[str] = None
     AZURE_LOG_ANALYTICS_WORKSPACE_ID: Optional[str] = None
+
+    # ===== SERVICE PRINCIPAL CREDENTIALS (for backend Azure API calls) =====
+    # IMPORTANT: These should come from .env.local in dev, or Key Vault in prod
+    # NEVER hardcode these values
+    AZURE_CLIENT_ID: Optional[str] = None  # Service principal client ID
+    AZURE_CLIENT_SECRET: Optional[str] = None  # Service principal secret
 
     # ===== FRONTEND/EXTERNAL URLS =====
     FRONTEND_URL: str = "http://localhost:3000"
@@ -72,16 +82,35 @@ class Settings(BaseSettings):
     @property
     def credential(self):
         """
-        Get authentication credential.
-        Uses Managed Identity in production, DefaultAzureCredential for local dev.
+        Get authentication credential for Azure API calls.
+
+        Priority:
+        1. Service Principal (if AZURE_CLIENT_ID and AZURE_CLIENT_SECRET are set)
+        2. Managed Identity (production)
+        3. DefaultAzureCredential (local dev fallback)
+
+        SECURITY: Never use user credentials for backend API calls.
+        The backend should authenticate as its own service principal,
+        not as the logged-in user.
         """
+        # Use service principal if credentials are provided
+        if self.AZURE_CLIENT_ID and self.AZURE_CLIENT_SECRET:
+            logger.info("[AUDIT] Using Service Principal credential (ClientSecretCredential)")
+            return ClientSecretCredential(
+                tenant_id=self.AZURE_TENANT_ID,
+                client_id=self.AZURE_CLIENT_ID,
+                client_secret=self.AZURE_CLIENT_SECRET
+            )
+
+        # Production: use Managed Identity
         if self.ENVIRONMENT == "prod":
-            logger.debug("[AUDIT] Using Managed Identity credential")
+            logger.info("[AUDIT] Using Managed Identity credential (production)")
             return ManagedIdentityCredential()
-        else:
-            # Local dev: try Managed Identity first, fall back to DefaultAzureCredential
-            logger.debug("[AUDIT] Using DefaultAzureCredential (dev mode)")
-            return DefaultAzureCredential()
+
+        # Local dev fallback: use whatever credentials are available
+        # WARNING: This might pick up your personal account from az login!
+        logger.warning("[AUDIT] Using DefaultAzureCredential (dev fallback) - consider setting AZURE_CLIENT_ID and AZURE_CLIENT_SECRET")
+        return DefaultAzureCredential()
 
     @property
     def kv_client(self) -> SecretClient:
